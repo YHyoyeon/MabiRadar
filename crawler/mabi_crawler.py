@@ -31,14 +31,21 @@ class MabiCrawler:
     def _setup_driver(self) -> webdriver.Chrome:
         logger.info("크롬 드라이버 설정 시작")
         options = Options()
-        options.add_argument('--headless')  # 헤드리스 모드
+        # 헤드리스 옵션 완전 비활성화
+        # options.add_argument('--headless')
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
-        
-        return webdriver.Chrome(
+        options.add_argument('--disable-blink-features=AutomationControlled')
+        options.add_argument('--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        driver = webdriver.Chrome(
             service=Service(ChromeDriverManager().install()),
             options=options
         )
+        # navigator.webdriver 속성 우회
+        driver.execute_cdp_cmd('Page.addScriptToEvaluateOnNewDocument', {
+            'source': 'Object.defineProperty(navigator, "webdriver", {get: () => undefined})'
+        })
+        return driver
     
     def _get_page_with_retry(self, url: str, retries: int = MAX_RETRIES) -> Optional[BeautifulSoup]:
         logger.info(f"페이지 로드 시도: {url}")
@@ -61,6 +68,11 @@ class MabiCrawler:
             soup = self._get_page_with_retry(url)
             if not soup:
                 break
+                
+            # 첫 페이지 HTML 저장 (디버깅용)
+            if page == 1:
+                with open("debug_first_page.html", "w", encoding="utf-8") as f:
+                    f.write(soup.prettify())
                 
             article_list = soup.select("tr.ub-content")
             if not article_list:
@@ -102,16 +114,31 @@ class MabiCrawler:
     def _process_articles(self, article_list):
         logger.info(f"게시글 목록 처리 시작: {len(article_list)}개")
         for article in article_list:
-            head = article.select_one("td.gall_subject").text.strip()
-            if head in ["공지", "AD", "설문"]:
-                continue
-                
             try:
+                head = article.select_one("td.gall_subject")
+                if not head:
+                    logger.error("gall_subject를 찾을 수 없습니다")
+                    continue
+                    
+                head_text = head.text.strip()
+                if head_text in ["공지", "AD", "설문"]:
+                    continue
+                    
                 title_tag = article.select_one("a")
+                if not title_tag:
+                    logger.error("제목 링크를 찾을 수 없습니다")
+                    continue
+                    
                 title = title_tag.text.strip()
-                gall_id = article.select_one("td.gall_num").text.strip()
+                gall_id = article.select_one("td.gall_num")
+                if not gall_id:
+                    logger.error("게시글 번호를 찾을 수 없습니다")
+                    continue
+                    
+                gall_id = gall_id.text.strip()
                 post_url = BASE_URL + title_tag['href']
                 
+                logger.info(f"게시글 발견: {title} (ID: {gall_id})")
                 self._process_single_article(gall_id, title, post_url, article)
             except Exception as e:
                 logger.error(f"게시글 처리 실패: {str(e)}")
