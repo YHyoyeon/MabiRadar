@@ -1,7 +1,7 @@
 # 📡 MabiRadar Crawler
 
  **마비노기 모바일 갤러리**의 게시글 및 댓글을 크롤링하는 Python 기반 크롤러입니다.  
-게시글 제목, 본문, 댓글을 수집하여 `contents.csv`, `replies.csv` 파일로 저장합니다.
+게시글 제목, 본문, 댓글을 수집하여 `contents.csv`, `replies.csv` 파일로 저장 후 AI를 활용해 부적절한 게시글을 필터하고 공략에 관련된 글을 요약하는 것 입니다.
 
 
 ## 📦 구조

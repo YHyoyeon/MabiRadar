@@ -132,4 +132,6 @@ dist
 
 log
 
+*.pyc
+
 *Zone.Identifier
