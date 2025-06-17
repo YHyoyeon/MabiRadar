@@ -1,0 +1,138 @@
+{
+    "env": {
+        "commonjs": true,
+        "es6": true,
+        "node": true,
+        "mocha": true                   // Mocha describe is not defined - error setting
+    },
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended"
+    ],
+    "parserOptions": {
+        "project": "./tsconfig.json",
+        "ecmaVersion": 2018
+    },
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly",
+        "configs" : "readonly",
+        "ServerError" : "readonly",
+        "GameError" : "readonly",
+        "BadRequest" : "readonly",
+        "AuthError" : "readonly",
+        "DupConnection" : "readonly",
+        "logger" : "readonly"
+    },
+    "rules": {
+        "keyword-spacing": ["error", { "before": true, "after": true }],
+        "space-infix-ops": ["error"],
+        "space-before-blocks": ["error", "always"],
+        "space-unary-ops": ["error", { "words": true, "nonwords": false }],
+        "object-curly-spacing": ["error", "always"],
+        "array-bracket-spacing": ["error", "never"],
+        "comma-spacing": ["error", { "before": false, "after": true }],
+        "semi-spacing": ["error", { "before": false, "after": true }],
+        "padding-line-between-statements": [
+            "error",
+            { "blankLine": "always", "prev": "const", "next": "return" },
+            { "blankLine": "always", "prev": "let", "next": "return" }
+        ],
+        "no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 1 }],
+        "indent": [
+            "error",
+            4,
+            {"SwitchCase": 1}
+        ],
+        "linebreak-style": [
+            "error",
+            "unix"
+        ],
+        "quotes": [
+            "error",
+            "single"
+        ],
+        "semi": [
+            "error",
+            "always"
+        ],
+        "eqeqeq": "off",
+        "no-plusplus": "off",
+        "no-shadow": "off",
+        "no-param-reassign": "off",
+        "brace-style": ["error", "stroustrup"],
+        //"arrow-body-style": ["error", "always"],
+        "no-unused-vars": "off",
+        "no-console": ["error", {"allow": ["log", "warn", "error"]}],
+        //"camelcase": ["error", {"properties": "always"}],
+        "callback-return": ["error"],
+        "handle-callback-err": ["error"],
+        "prefer-const": ["error"],
+        "no-prototype-builtins": ["error"],
+        "prefer-arrow-callback": 1,
+        "prefer-template": 0, /* "myString" + anotherString 허용 */
+        "import/no-dynamic-require": 0, /* require(__base+"") 허용 */
+        "no-underscore-dangle": 0, /* 변수명 _ 붙이기 허용 */
+        "max-len": ["error", {"code": 200}], /* 코드 한 줄 최대 길이 */
+        "no-restricted-syntax": ["error",  "LabeledStatement", "WithStatement"],
+        "no-continue": 0,  /* for loop에서 no-continue 에러 off */
+        "no-await-in-loop": 0,
+        "func-names": ["error", "never"], /* 이름 없는 함수 허용(레거시 async.waterfall) */
+        "global-require": 0, /* 레거시 코드 : 함수 안에서 require 허용 */
+        "no-path-concat": 0, /* __dirname + "/" + "app" 허용 */
+        "no-useless-concat": 0,
+        "consistent-return": 0, /* 2일 때 모든 함수는 return statement 를 강제함 */
+        "guard-for-in": 0,
+        "no-unused-expressions":["error", { "allowShortCircuit": true }],
+        "no-use-before-define": ["error", { "functions": false }],
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/no-unused-vars": ["error", {"vars": "all", "args": "none", "ignoreRestSiblings": false, "varsIgnorePattern": "debug" }],
+        "@typescript-eslint/no-empty-function": "off",
+        "@typescript-eslint/no-explicit-any": "off",
+        "@typescript-eslint/ban-types": "off",
+        "@typescript-eslint/no-namespace": "off",
+        "@typescript-eslint/no-floating-promises": "error",  // Enforce `await` usage on async calls
+        "@typescript-eslint/naming-convention": [
+            "error",
+            {
+                "selector": "default",
+                "format": ["camelCase", "snake_case"]
+            },
+            {
+                "selector": "import",
+                "format": ["camelCase", "PascalCase"],
+                "leadingUnderscore": "allow"  // 밑줄로 시작하는 import를 허용
+            },
+            {
+                "selector": "variableLike",
+                "format": ["camelCase"]
+            },
+            {
+                "selector": "function",
+                "format": ["camelCase"]
+            },
+            {
+                "selector": "typeLike",
+                "format": ["PascalCase"]
+            },
+            {
+                "selector": "property",
+                "format": ["camelCase", "snake_case"],
+                "leadingUnderscore": "allow"
+            },
+            {
+                "selector": "enum",
+                "format": ["PascalCase"]
+            },
+            {
+                "selector": "enumMember",
+                "format": ["PascalCase"]
+            }
+        ]
+    }
+}
