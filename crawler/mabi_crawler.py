@@ -5,7 +5,7 @@ from selenium.common.exceptions import WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from time import sleep
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import List, Tuple, Optional
 import logging
 
@@ -65,11 +65,24 @@ class MabiCrawler:
             article_list = soup.select("tr.ub-content")
             if not article_list:
                 break
+
+            logger.info(url)
                 
             # 날짜 범위 검사
             try:
                 latest_date = "20" + article_list[-1].select_one("td.gall_date").text.strip()
-                latest_time = datetime.strptime(latest_date, "%Y.%m.%d")
+                # 다양한 날짜 형식 처리
+                try:
+                    latest_time = datetime.strptime(latest_date, "%Y.%m.%d")
+                except ValueError:
+                    try:
+                        # '2017:49' 형식 처리
+                        year, week = latest_date.split(':')
+                        latest_time = datetime.strptime(f"{year}-01-01", "%Y-%m-%d")
+                        latest_time = latest_time.replace(day=1) + timedelta(weeks=int(week))
+                    except Exception as e:
+                        logger.error(f"날짜 형식 변환 실패: {latest_date} - {str(e)}")
+                        break
             except Exception as e:
                 logger.error(f"날짜 파싱 실패: {str(e)}")
                 break
