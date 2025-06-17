@@ -29,7 +29,7 @@ class MabiCrawler:
         self.comments: List[Tuple] = []
         
     def _setup_driver(self) -> webdriver.Chrome:
-        """크롬 드라이버를 설정하고 반환합니다."""
+        logger.info("크롬 드라이버 설정 시작")
         options = Options()
         options.add_argument('--headless')  # 헤드리스 모드
         options.add_argument('--no-sandbox')
@@ -41,7 +41,7 @@ class MabiCrawler:
         )
     
     def _get_page_with_retry(self, url: str, retries: int = MAX_RETRIES) -> Optional[BeautifulSoup]:
-        """페이지를 가져오고 파싱합니다. 실패시 재시도합니다."""
+        logger.info(f"페이지 로드 시도: {url}")
         for i in range(retries):
             try:
                 self.driver.get(url)
@@ -54,7 +54,7 @@ class MabiCrawler:
                 sleep(SLEEP_TIME * 2)
     
     def crawl(self):
-        """크롤링을 실행합니다."""
+        logger.info("크롤링 시작")
         page = 1
         while True:
             url = f"{BASE_URL}/{GALLERY_TYPE}/board/lists/?id={TARGET_GALLERY}&page={page}"
@@ -66,7 +66,7 @@ class MabiCrawler:
             if not article_list:
                 break
 
-            logger.info(url)
+            logger.info(f"url: {url}")
                 
             # 날짜 범위 검사
             try:
@@ -100,7 +100,7 @@ class MabiCrawler:
         save_data(self.posts, self.comments)
         
     def _process_articles(self, article_list):
-        """게시글 목록을 처리합니다."""
+        logger.info(f"게시글 목록 처리 시작: {len(article_list)}개")
         for article in article_list:
             head = article.select_one("td.gall_subject").text.strip()
             if head in ["공지", "AD", "설문"]:
@@ -117,7 +117,7 @@ class MabiCrawler:
                 logger.error(f"게시글 처리 실패: {str(e)}")
                 
     def _process_single_article(self, gall_id: str, title: str, post_url: str, article):
-        """단일 게시글을 처리합니다."""
+        logger.info(f"단일 게시글 처리 시작")
         post_soup = self._get_page_with_retry(post_url)
         if not post_soup:
             return
@@ -133,7 +133,7 @@ class MabiCrawler:
         self._process_comments(post_soup, gall_id)
         
     def _process_comments(self, post_soup: BeautifulSoup, gall_id: str):
-        """댓글을 처리합니다."""
+        logger.info(f"댓글 처리 시작: {gall_id}")
         reply_blocks = post_soup.select("li.ub-content")
         for r in reply_blocks:
             try:
