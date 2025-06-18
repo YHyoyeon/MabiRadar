@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Final
 
 # 갤러리 설정
@@ -7,8 +7,8 @@ TARGET_GALLERY: Final[str] = "mabinogimobile"
 BASE_URL: Final[str] = "https://gall.dcinside.com"
 
 # 크롤링 설정
-START_DATE: Final[datetime] = datetime.strptime("2025.06.18 11:00:00", "%Y.%m.%d %H:%M:%S")
-END_DATE: Final[datetime] = datetime.strptime("2025.06.18 23:59:59", "%Y.%m.%d %H:%M:%S")
+START_DATE: Final[datetime] = datetime.now() - timedelta(minutes=3)
+END_DATE: Final[datetime] = datetime.now()
 
 # 크롤링 옵션
 SLEEP_TIME: Final[float] = 1.0

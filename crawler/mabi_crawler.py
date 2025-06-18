@@ -61,6 +61,9 @@ class MabiCrawler:
     
     def crawl(self):
         logger.info("크롤링 시작")
+        logger.info(f"현재시간 : {START_DATE}")
+        logger.info(f"종료시간 : {END_DATE}")
+        
         page = 1
         while True:
             url = f"{BASE_URL}/{GALLERY_TYPE}/board/lists/?id={TARGET_GALLERY}&page={page}"
@@ -190,7 +193,7 @@ class MabiCrawler:
             
         self.posts.append((gall_id, title, content, post_date))
         
-        self._process_comments(post_soup, gall_id)
+        # self._process_comments(post_soup, gall_id)
         
     # def _process_comments(self, post_soup: BeautifulSoup, gall_id: str):
     #     logger.info(f"댓글 처리 시작: {gall_id}")
