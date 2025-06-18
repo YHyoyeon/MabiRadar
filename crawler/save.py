@@ -12,7 +12,7 @@ def ensure_output_dir() -> None:
 #    Args:
 #         posts: 게시글 데이터 리스트 (id, title, content, date)
 #         comments: 댓글 데이터 리스트 (id, reply_id, reply_content, reply_date)
-def save_data(posts: List[Tuple], comments: List[Tuple]) -> None:
+def save_data(posts: List[Tuple], comments: List[Tuple] = []) -> None:
     ensure_output_dir()
     
     # 게시글 저장

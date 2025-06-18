@@ -9,12 +9,13 @@ load_dotenv(dotenv_path=Path(__file__).parent.parent.parent / '.env')
 
 # 넥슨 마비노기 모바일 공지사항 URL
 BASE_URL: Final[str] = "https://mabinogimobile.nexon.com"
-NOTICE_LIST_URL: Final[str] = f"{BASE_URL}/News/Notice?headlineId=&directionType=DEFAULT&pageno=1"
+NOTICE_URL: Final[str] = f"{BASE_URL}/News/Notice"
+NOTICE_LIST_URL: Final[str] = f"{NOTICE_URL}?headlineId=&directionType=DEFAULT&pageno=1"
 
 # 크롤링 설정
-END_DATE: Final[datetime] = datetime.now() - timedelta(days=7)  # 7일 전까지의 게시글 크롤링
-SLEEP_TIME: Final[float] = 1.0  # 페이지 요청 간 대기 시간
-MAX_RETRIES: Final[int] = 3  # 페이지 로드 실패 시 최대 재시도 횟수
+END_DATE: Final[datetime] = datetime.now() - timedelta(days=1)
+SLEEP_TIME: Final[float] = 1.0
+MAX_RETRIES: Final[int] = 2
 
 # 파일 경로
 OUTPUT_DIR: Final[str] = "nexon_crawler/output"
