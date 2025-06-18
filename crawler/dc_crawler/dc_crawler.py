@@ -80,7 +80,7 @@ class DcCrawler:
                 
             # 첫 페이지 HTML 저장 (디버깅용)
             if page == 1:
-                with open("debug_first_page.html", "w", encoding="utf-8") as f:
+                with open("debug/debug_first_page.html", "w", encoding="utf-8") as f:
                     f.write(soup.prettify())
                 
             # 게시글 목록 찾기
