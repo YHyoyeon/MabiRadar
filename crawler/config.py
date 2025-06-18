@@ -7,8 +7,8 @@ TARGET_GALLERY: Final[str] = "mabinogimobile"
 BASE_URL: Final[str] = "https://gall.dcinside.com"
 
 # 크롤링 설정
-START_DATE: Final[datetime] = datetime.strptime("2025.06.10", "%Y.%m.%d")
-END_DATE: Final[datetime] = datetime.strptime("2025.06.17", "%Y.%m.%d")
+START_DATE: Final[datetime] = datetime.strptime("2025.06.18 11:00:00", "%Y.%m.%d %H:%M:%S")
+END_DATE: Final[datetime] = datetime.strptime("2025.06.18 23:59:59", "%Y.%m.%d %H:%M:%S")
 
 # 크롤링 옵션
 SLEEP_TIME: Final[float] = 1.0
