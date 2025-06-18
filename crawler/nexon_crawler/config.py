@@ -40,4 +40,9 @@ DISCORD_WEBHOOK_URL: Final[str] = os.getenv("DISCORD_WEBHOOK_URL", "")
 
 # 로깅 설정
 LOG_FORMAT: Final[str] = '%(asctime)s - %(levelname)s - %(message)s'
-LOG_LEVEL: Final[str] = "DEBUG" if DEBUG else "INFO" 
+LOG_LEVEL: Final[str] = "DEBUG" if DEBUG else "INFO"
+
+# 업데이트 크롤러 설정
+UPDATE_URL = "https://mabinogimobile.nexon.com/News/Update"
+UPDATE_CONTENTS_FILE = OUTPUT_DIR / "update_contents.json"
+UPDATE_IMAGES_DIR = OUTPUT_DIR / "updates" 

@@ -36,7 +36,7 @@ def cleanup_old_screenshots(folder_path: Path, max_files: int = 10) -> None:
     except Exception as e:
         logging.error(f"이미지 파일 정리 중 오류 발생: {str(e)}")
 
-def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_time: int = 2) -> str:
+def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_time: int = 2, capture_height_ratio: float = 0.5) -> str:
     """
     웹페이지의 스크린샷을 저장합니다.
     
@@ -68,8 +68,9 @@ def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_ti
         # 현재 창 크기 가져오기
         window_size = driver.get_window_size()
         
-        # 전체 높이의 50%로 창 크기 조정
-        capture_height = int(total_height * 0.5)
+        # 전체 높이의 50%로 창 크기 조정 
+        # TODO: 0.5 변수로 추가
+        capture_height = int(total_height * capture_height_ratio)
         driver.set_window_size(window_size['width'], capture_height)
         
         # 스크린샷 저장
