@@ -1,35 +1,25 @@
 from discord_webhook import DiscordWebhook, DiscordEmbed
-import json
 from typing import List, Dict
 import logging
 from pathlib import Path
-import os
 
-logger = logging.getLogger(__name__)
+from config import DISCORD_WEBHOOK_URL, LAST_NOTIFIED_FILE, BASE_URL
+from utils import load_json_file, save_json_file, setup_logging
+
+logger = setup_logging()
 
 class DiscordNotifier:
-    def __init__(self, webhook_url: str):
+    def __init__(self, webhook_url: str = DISCORD_WEBHOOK_URL):
         self.webhook_url = webhook_url
-        self.last_notified_ids = self._load_last_notified_ids()
+        self.last_notified_ids = set(self._load_last_notified_ids())
         
-    def _load_last_notified_ids(self) -> set:
+    def _load_last_notified_ids(self) -> List[str]:
         """마지막으로 알림을 보낸 게시글 ID들을 로드"""
-        try:
-            if os.path.exists('last_notified.json'):
-                with open('last_notified.json', 'r') as f:
-                    return set(json.load(f))
-            return set()
-        except Exception as e:
-            logger.error(f"마지막 알림 ID 로드 중 오류 발생: {str(e)}")
-            return set()
+        return load_json_file(LAST_NOTIFIED_FILE)
     
     def _save_last_notified_ids(self):
         """알림을 보낸 게시글 ID들을 저장"""
-        try:
-            with open('last_notified.json', 'w') as f:
-                json.dump(list(self.last_notified_ids), f)
-        except Exception as e:
-            logger.error(f"마지막 알림 ID 저장 중 오류 발생: {str(e)}")
+        save_json_file(LAST_NOTIFIED_FILE, list(self.last_notified_ids))
     
     def send_notification(self, posts: List[Dict]):
         """새로운 게시글에 대해 디스코드 알림 전송"""
@@ -49,7 +39,7 @@ class DiscordNotifier:
             )
             
             # 게시글 URL 추가
-            post_url = f"https://mabinogi.nexon.com/News/Notice/{post['id']}"
+            post_url = f"{BASE_URL}/News/Notice/{post['id']}"
             embed.add_embed_field(name="링크", value=f"[게시글 보기]({post_url})")
             
             # 날짜 정보 추가
