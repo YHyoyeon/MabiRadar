@@ -24,6 +24,7 @@ USER_AGENT: Final[str] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS 
 # 파일 경로
 OUTPUT_DIR: Final[Path] = BASE_DIR / "output"
 CONTENTS_FILE: Final[Path] = OUTPUT_DIR / "notice_contents.json"
+NOTICE_IMAGES_DIR: Final[Path] = OUTPUT_DIR / "notice_images"
 LAST_NOTIFIED_FILE: Final[Path] = OUTPUT_DIR / "last_notified.json"
 EVENT_CONTENTS_FILE: Final[Path] = OUTPUT_DIR / "event_contents.json"
 EVENT_IMAGES_DIR: Final[Path] = OUTPUT_DIR / "event_images"

@@ -8,7 +8,7 @@ if project_root not in sys.path:
     sys.path.append(project_root)
 
 from crawler.nexon_crawler.config import (
-    NOTICE_URL, CONTENTS_FILE, DEBUG_DIR
+    NOTICE_URL, CONTENTS_FILE, DEBUG_DIR, NOTICE_IMAGES_DIR
 )
 from crawler.nexon_crawler.utils.utils import (
     setup_logging, ensure_directories, setup_session,
@@ -16,6 +16,7 @@ from crawler.nexon_crawler.utils.utils import (
     load_previous_ids, save_current_items
 )
 from crawler.nexon_crawler.utils.discord_notifier import DiscordNotifier
+from crawler.nexon_crawler.utils.screenshot_utils import setup_webdriver, save_screenshot
 
 logging = setup_logging()
 
@@ -27,6 +28,13 @@ class NoticeCrawler:
         self.previous_post_ids: Set[str] = load_previous_ids(CONTENTS_FILE)
         ensure_directories()
         
+        # Selenium 설정
+        self.driver = setup_webdriver()
+                
+    def __del__(self):
+        if hasattr(self, 'driver'):
+            self.driver.quit()
+
     def _save_current_posts(self):
         logging.info(f"현재 게시글 목록을 저장: {CONTENTS_FILE}")
         save_ids = save_current_items(CONTENTS_FILE, self.posts)
@@ -110,8 +118,10 @@ class NoticeCrawler:
         new_posts = [post for post in self.posts if post['id'] not in self.previous_post_ids]
         if new_posts:
             logging.info(f"새로운 게시글 {len(new_posts)}개 발견! 디스코드 알림 전송")
-            # TODO: 디스코드 알림 전송 기능 추가
-            # self.discord_notifier.send_notification(new_posts)
+            for post in new_posts:
+                post_url = f"{NOTICE_URL}/{post['id']}"
+                image_path = NOTICE_IMAGES_DIR / f"{post['id']}.png"
+                self.discord_notifier.send_notification(post, post_url, "공지사항", image_path)
         else:
             logging.info("새로운 게시글이 없습니다.")
                 
@@ -153,6 +163,15 @@ class NoticeCrawler:
                     content = ' '.join(final_texts)
                 else:
                     content = ""
+
+                try:            
+                    # 이벤트 스크린샷 저장
+                    image_path = NOTICE_IMAGES_DIR / f"{post_id}.png"
+                    image_path = save_screenshot(self.driver, post_url, image_path)
+                    
+                except Exception as e:
+                    logging.error(f"이벤트 이미지 저장 중 오류 발생: {str(e)}")
+                    image_path = ""
             
         except Exception as e:
             logging.error(f"게시글 내용 추출 중 오류 발생: {str(e)}")

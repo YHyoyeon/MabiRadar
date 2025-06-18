@@ -14,6 +14,28 @@ def setup_webdriver() -> webdriver.Chrome:
     chrome_options.add_argument('--disable-dev-shm-usage')
     return webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
 
+def cleanup_old_screenshots(folder_path: Path, max_files: int = 10) -> None:
+    logging.info(f"cleanup_old_screenshots: {folder_path}")
+    try:
+        # 폴더 내 모든 이미지 파일 가져오기
+        image_files = list(folder_path.glob('*.png'))
+        
+        # 파일 개수가 max_files를 초과하는 경우
+        if len(image_files) > max_files:
+            # 파일명에서 ID 추출하여 정렬
+            sorted_files = sorted(image_files, key=lambda x: int(x.stem.split('_')[-1]))
+            
+            # 삭제할 파일 개수 계산
+            files_to_delete = len(sorted_files) - max_files
+            
+            # 가장 오래된 파일부터 삭제
+            for file in sorted_files[:files_to_delete]:
+                file.unlink()
+                logging.info(f"오래된 이미지 파일 삭제: {file}")
+                
+    except Exception as e:
+        logging.error(f"이미지 파일 정리 중 오류 발생: {str(e)}")
+
 def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_time: int = 2) -> str:
     """
     웹페이지의 스크린샷을 저장합니다.
@@ -28,6 +50,11 @@ def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_ti
         str: 저장된 스크린샷의 경로. 실패시 빈 문자열 반환
     """
     try:
+        # 이미지가 이미 존재하는 경우 해당 경로 반환
+        if save_path.exists():
+            logging.info(f"이미지가 이미 존재합니다: {save_path}")
+            return str(save_path)
+            
         # 저장 디렉토리 생성
         save_path.parent.mkdir(exist_ok=True)
         
@@ -50,6 +77,9 @@ def save_screenshot(driver: webdriver.Chrome, url: str, save_path: Path, wait_ti
         
         # 원래 창 크기로 복원
         driver.set_window_size(window_size['width'], window_size['height'])
+        
+        # 이미지 파일 정리 실행
+        cleanup_old_screenshots(save_path.parent)
         
         return str(save_path)
     except Exception as e:

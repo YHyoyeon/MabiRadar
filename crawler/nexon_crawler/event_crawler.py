@@ -123,8 +123,10 @@ class EventCrawler:
         new_events = [event for event in self.events if event['id'] not in self.previous_event_ids]
         if new_events:
             logging.info(f"새로운 이벤트 {len(new_events)}개 발견! 디스코드 알림 전송")
-            # TODO: 디스코드 알림 전송 기능 추가
-            # self.discord_notifier.send_notification(new_events)
+            for event in new_events:
+                event_url = f"{EVENT_URL}/{event['id']}"
+                image_path = EVENT_IMAGES_DIR / f"{event['id']}.png"
+                self.discord_notifier.send_notification(event, event_url, "이벤트", image_path)
         else:
             logging.info("새로운 이벤트가 없습니다.")
                 
