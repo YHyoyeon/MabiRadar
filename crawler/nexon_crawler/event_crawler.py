@@ -12,12 +12,14 @@ if project_root not in sys.path:
 
 from crawler.nexon_crawler.config import (
     EVENT_URL, EVENT_CONTENTS_FILE,
-    DEBUG_DIR, EVENT_IMAGES_DIR
+    DEBUG_DIR, EVENT_IMAGES_DIR,
+    EVENT_LAST_ID_FILE
 )
 from crawler.nexon_crawler.utils.utils import (
     setup_logging, ensure_directories, setup_session,
     get_page_content,
-    load_previous_ids, save_current_items
+    save_current_items,
+    load_latest_id, save_latest_id
 )
 from crawler.nexon_crawler.utils.discord_notifier import DiscordNotifier
 from crawler.nexon_crawler.utils.parse_event_date import EventDateParser
@@ -30,11 +32,13 @@ class EventCrawler:
         self.session = setup_session()
         self.events: List[Dict] = []
         self.discord_notifier = DiscordNotifier()
-        self.previous_event_ids: Set[str] = load_previous_ids(EVENT_CONTENTS_FILE)
         ensure_directories()
         
         # Selenium 설정
         self.driver = setup_webdriver()
+        
+        # 최신 ID 파일 경로 설정
+        self.latest_id_file = Path(EVENT_LAST_ID_FILE).parent / "event_latest_id.json"
         
     def __del__(self):
         if hasattr(self, 'driver'):
@@ -42,8 +46,8 @@ class EventCrawler:
 
     def _save_current_events(self):
         logging.info(f"현재 이벤트 목록을 저장: {EVENT_CONTENTS_FILE}")
-        save_ids = save_current_items(EVENT_CONTENTS_FILE, self.events)
-        logging.info(f"이벤트 저장 완료 ids: {save_ids}")
+        save_current_items(EVENT_CONTENTS_FILE, self.events)
+        logging.info(f"이벤트 저장 완료")
 
     def crawl(self):
         logging.info(f"{self.__class__.__name__} 크롤링 시작")
@@ -71,6 +75,20 @@ class EventCrawler:
                 logging.error("이벤트를 찾을 수 없습니다")
                 return
 
+            # 첫 번째 이벤트 ID 확인
+            first_event_id = max(int(event.get('data-threadid')) for event in event_list)
+            if not first_event_id:
+                logging.error("첫 번째 이벤트 ID를 찾을 수 없습니다")
+                return
+
+            # 저장된 최신 ID 로드
+            saved_latest_id = load_latest_id(self.latest_id_file, "event")
+            
+            # 첫 번째 이벤트가 저장된 최신 ID와 같으면 크롤링 중단
+            if saved_latest_id and first_event_id == saved_latest_id:
+                logging.info("새로운 이벤트가 없습니다.")
+                return
+
             logging.info(f"총 {len(event_list)}개의 이벤트를 찾았습니다")
             self._process_events(event_list)
 
@@ -79,12 +97,18 @@ class EventCrawler:
         
     def _process_events(self, event_list):
         """이벤트 목록을 처리하는 메서드"""
+        saved_latest_id = load_latest_id(self.latest_id_file, "event")
+        
         for event in event_list:
             try:
                 # 이벤트 ID 추출
                 event_id = event.get('data-threadid')
                 if not event_id:
                     continue
+
+                # 저장된 최신 ID와 일치하면 이벤트 후 크롤링 중단
+                if saved_latest_id and int(event_id) <= int(saved_latest_id):
+                    break
 
                 # 제목 추출
                 title_elem = event.select_one('.title span')
@@ -120,17 +144,22 @@ class EventCrawler:
         self._save_current_events()
         
         # 새로운 이벤트만 디스코드 알림 전송
-        new_events = [event for event in self.events if event['id'] not in self.previous_event_ids]
+        new_events = [event for event in self.events]
         if new_events:
             logging.info(f"새로운 이벤트 {len(new_events)}개 발견! 디스코드 알림 전송")
             for event in new_events:
                 event_url = f"{EVENT_URL}/{event['id']}"
                 image_path = EVENT_IMAGES_DIR / f"{event['id']}.png"
                 self.discord_notifier.send_notification(event, event_url, "이벤트", image_path)
+            
+            # 최신 ID 저장
+            if new_events:
+                latest_id = max(int(event['id']) for event in new_events)
+                save_latest_id(self.latest_id_file, "event", latest_id)
+                logging.info(f"최신 ID 저장 완료: {latest_id}")
         else:
             logging.info("새로운 이벤트가 없습니다.")
                 
-
     def _process_single_event(self, event_id: str, title: str, event_url: str, event_date: str, event_type: str, is_first: bool):
         event_soup = get_page_content(event_url, self.session)
         if not event_soup:

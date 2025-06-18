@@ -12,12 +12,14 @@ if project_root not in sys.path:
 
 from crawler.nexon_crawler.config import (
     UPDATE_URL, UPDATE_CONTENTS_FILE,
-    DEBUG_DIR, UPDATE_IMAGES_DIR
+    DEBUG_DIR, UPDATE_IMAGES_DIR,
+    UPDATE_LAST_ID_FILE
 )
 from crawler.nexon_crawler.utils.utils import (
     setup_logging, ensure_directories, setup_session,
     get_page_content,
-    load_previous_ids, save_current_items
+    save_current_items,
+    load_latest_id, save_latest_id
 )
 from crawler.nexon_crawler.utils.discord_notifier import DiscordNotifier
 from crawler.nexon_crawler.utils.screenshot_utils import setup_webdriver, save_screenshot
@@ -29,11 +31,13 @@ class UpdateCrawler:
         self.session = setup_session()
         self.updates: List[Dict] = []
         self.discord_notifier = DiscordNotifier()
-        self.previous_update_ids: Set[str] = load_previous_ids(UPDATE_CONTENTS_FILE)
         ensure_directories()
         
         # Selenium 설정
         self.driver = setup_webdriver()
+        
+        # 최신 ID 파일 경로 설정
+        self.latest_id_file = Path(UPDATE_LAST_ID_FILE).parent / "update_latest_id.json"
         
     def __del__(self):
         if hasattr(self, 'driver'):
@@ -41,8 +45,8 @@ class UpdateCrawler:
 
     def _save_current_updates(self):
         logging.info(f"현재 업데이트 목록을 저장: {UPDATE_CONTENTS_FILE}")
-        save_ids = save_current_items(UPDATE_CONTENTS_FILE, self.updates)
-        logging.info(f"업데이트 저장 완료 ids: {save_ids}")
+        save_current_items(UPDATE_CONTENTS_FILE, self.updates)
+        logging.info(f"업데이트 저장 완료")
 
     def crawl(self):
         logging.info(f"{self.__class__.__name__} 크롤링 시작")
@@ -70,6 +74,20 @@ class UpdateCrawler:
                 logging.error("업데이트를 찾을 수 없습니다")
                 return
 
+            # 첫 번째 업데이트 ID 확인
+            first_update_id = max(int(update.get('data-threadid')) for update in update_list)
+            if not first_update_id:
+                logging.error("첫 번째 업데이트 ID를 찾을 수 없습니다")
+                return
+
+            # 저장된 최신 ID 로드
+            saved_latest_id = load_latest_id(self.latest_id_file, "update")
+            
+            # 첫 번째 업데이트가 저장된 최신 ID와 같으면 크롤링 중단
+            if saved_latest_id and first_update_id == saved_latest_id:
+                logging.info("새로운 업데이트가 없습니다.")
+                return
+
             logging.info(f"총 {len(update_list)}개의 업데이트를 찾았습니다")
             self._process_updates(update_list)
 
@@ -78,12 +96,18 @@ class UpdateCrawler:
         
     def _process_updates(self, update_list):
         """업데이트 목록을 처리하는 메서드"""
+        saved_latest_id = load_latest_id(self.latest_id_file, "update")
+        
         for update in update_list:
             try:
                 # 업데이트 ID 추출
                 update_id = update.get('data-threadid')
                 if not update_id:
                     continue
+
+                # 저장된 최신 ID와 일치하면 업데이트 후 크롤링 중단
+                if saved_latest_id and int(update_id) <= int(saved_latest_id):
+                    break
 
                 # 제목 추출
                 title_elem = update.select_one('.title span')
@@ -119,13 +143,19 @@ class UpdateCrawler:
         self._save_current_updates()
         
         # 새로운 업데이트만 디스코드 알림 전송
-        new_updates = [update for update in self.updates if update['id'] not in self.previous_update_ids]
+        new_updates = [update for update in self.updates]
         if new_updates:
             logging.info(f"새로운 업데이트 {len(new_updates)}개 발견! 디스코드 알림 전송")
             for update in new_updates:
                 update_url = f"{UPDATE_URL}/{update['id']}"
                 image_path = UPDATE_IMAGES_DIR / f"{update['id']}.png"
                 self.discord_notifier.send_notification(update, update_url, "업데이트", image_path)
+            
+            # 최신 ID 저장
+            if new_updates:
+                latest_id = max(int(update['id']) for update in new_updates)
+                save_latest_id(self.latest_id_file, "update", latest_id)
+                logging.info(f"최신 ID 저장 완료: {latest_id}")
         else:
             logging.info("새로운 업데이트가 없습니다.")
                 

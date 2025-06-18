@@ -1,7 +1,7 @@
 import logging
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 import requests
 from bs4 import BeautifulSoup
 from time import sleep
@@ -69,17 +69,27 @@ def setup_session() -> requests.Session:
     })
     return session
 
-def load_previous_ids(file_url: str) -> Set[str]:
-    logging.info(f"이전 ID 로드 시작: {file_url}")
-    try:
-        items = load_json_file(file_url)
-        ids = {item['id'] for item in items}
-        logging.info(f"이전 ID 로드 완료: {ids}")
-        return ids
-    except FileNotFoundError:
-        logging.info(f"이전 파일이 없습니다. 새로운 파일을 생성합니다: {file_url}")
-        return set()
-
-def save_current_items(file_url: str, items: List[Dict]) -> Set[str]:
+def save_current_items(file_url: str, items: List[Dict]) -> None:
+    """현재 아이템들을 JSON 파일로 저장합니다."""
     save_json_file(file_url, items)
-    return {item['id'] for item in items} 
+
+def load_latest_id(file_path: Path, crawler_type: str) -> Optional[str]:
+    """크롤러별 최신 ID를 로드합니다."""
+    try:
+        if file_path.exists():
+            with open(file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+                return data.get(crawler_type)
+        return None
+    except Exception as e:
+        logging.error(f"최신 ID 로드 중 오류 발생: {str(e)}")
+        return None
+
+def save_latest_id(file_path: Path, crawler_type: str, latest_id: str) -> None:
+    """크롤러별 최신 ID를 저장합니다."""
+    try:
+        data = {crawler_type: latest_id}
+        with open(file_path, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"최신 ID 저장 중 오류 발생: {str(e)}") 
