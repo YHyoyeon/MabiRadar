@@ -135,3 +135,6 @@ log
 *.pyc
 
 *Zone.Identifier
+
+*/debug/*
+*/output/*

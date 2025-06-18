@@ -1,44 +1,45 @@
-from typing import List, Dict, Optional, Set
-import logging
+from typing import List, Dict, Set
+import sys
 from pathlib import Path
 
-from config import (
-    BASE_URL, NOTICE_URL, CONTENTS_FILE,
-    DEBUG_DIR
+# 프로젝트 루트 디렉토리를 Python 경로에 추가
+project_root = str(Path(__file__).parent.parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+from crawler.nexon_crawler.config import (
+    NOTICE_URL, CONTENTS_FILE, DEBUG_DIR
 )
-from utils import (
+from crawler.nexon_crawler.utils.utils import (
     setup_logging, ensure_directories, setup_session,
-    get_page_content, load_json_file, save_json_file
+    get_page_content,
+    load_previous_ids, save_current_items
 )
-from discord_notifier import DiscordNotifier
+from crawler.nexon_crawler.utils.discord_notifier import DiscordNotifier
 
-logger = setup_logging()
+logging = setup_logging()
 
-class NexonCrawler:
+class NoticeCrawler:
     def __init__(self):
         self.session = setup_session()
         self.posts: List[Dict] = []
         self.discord_notifier = DiscordNotifier()
-        self.previous_post_ids: Set[str] = self._load_previous_post_ids()
+        self.previous_post_ids: Set[str] = load_previous_ids(CONTENTS_FILE)
         ensure_directories()
         
-    def _load_previous_post_ids(self) -> Set[str]:
-        """이전 게시글 ID 목록을 로드"""
-        posts = load_json_file(CONTENTS_FILE)
-        return {post['id'] for post in posts}
-            
     def _save_current_posts(self):
-        """현재 게시글 목록을 저장"""
-        save_json_file(CONTENTS_FILE, self.posts)
-        self.previous_post_ids = {post['id'] for post in self.posts}
+        logging.info(f"현재 게시글 목록을 저장: {CONTENTS_FILE}")
+        save_ids = save_current_items(CONTENTS_FILE, self.posts)
+        logging.info(f"게시글 저장 완료 ids: {save_ids}")
 
     def crawl(self):
-        """크롤링 실행"""
+        logging.info(f"{self.__class__.__name__} 크롤링 시작")
+
         try:
             # 페이지 가져오기
             soup = get_page_content(NOTICE_URL, self.session)
             if not soup:
-                logger.error("페이지를 가져오는데 실패했습니다")
+                logging.error("페이지를 가져오는데 실패했습니다")
                 return
 
             # 페이지 HTML 저장 (디버깅용)
@@ -48,20 +49,20 @@ class NexonCrawler:
             # 게시글 목록 찾기
             list_area = soup.select_one('.list_area[data-mm-boardlist]')
             if not list_area:
-                logger.error("게시글 목록 영역을 찾을 수 없습니다")
+                logging.error("게시글 목록 영역을 찾을 수 없습니다")
                 return
 
             # 게시글 목록 추출
             article_list = list_area.select('li.item[data-mm-listitem]')
             if not article_list:
-                logger.error("게시글을 찾을 수 없습니다")
+                logging.error("게시글을 찾을 수 없습니다")
                 return
 
-            logger.info(f"총 {len(article_list)}개의 게시글을 찾았습니다")
+            logging.info(f"총 {len(article_list)}개의 게시글을 찾았습니다")
             self._process_articles(article_list)
 
         except Exception as e:
-            logger.error(f"크롤링 중 오류 발생: {str(e)}")
+            logging.error(f"크롤링 중 오류 발생: {str(e)}")
         
     def _process_articles(self, article_list):
         """게시글 목록을 처리하는 메서드"""
@@ -79,8 +80,8 @@ class NexonCrawler:
                 title = title_elem.text.strip()
 
                 # 게시글 URL 생성
-                post_url = f"{BASE_URL}/News/Notice/{post_id}"
-                logger.info(f"게시글 URL 생성: {post_url}")
+                post_url = f"{NOTICE_URL}/{post_id}"
+                logging.info(f"게시글 URL 생성: {post_url}")
 
                 # 날짜 추출
                 date_elem = article.select_one('.date span')
@@ -99,7 +100,7 @@ class NexonCrawler:
                 self._process_single_article(post_id, title, post_url, post_date, post_type, is_first)
 
             except Exception as e:
-                logger.error(f"게시글 처리 중 오류 발생: {str(e)}")
+                logging.error(f"게시글 처리 중 오류 발생: {str(e)}")
                 continue
         
         # 게시글 저장
@@ -108,17 +109,17 @@ class NexonCrawler:
         # 새로운 게시글만 디스코드 알림 전송
         new_posts = [post for post in self.posts if post['id'] not in self.previous_post_ids]
         if new_posts:
-            logger.info(f"새로운 게시글 {len(new_posts)}개 발견! 디스코드 알림 전송")
-            self.discord_notifier.send_notification(new_posts)
+            logging.info(f"새로운 게시글 {len(new_posts)}개 발견! 디스코드 알림 전송")
+            # TODO: 디스코드 알림 전송 기능 추가
+            # self.discord_notifier.send_notification(new_posts)
         else:
-            logger.info("새로운 게시글이 없습니다.")
+            logging.info("새로운 게시글이 없습니다.")
                 
     def _process_single_article(self, post_id: str, title: str, post_url: str, post_date: str, post_type: str, is_first: bool):
-        logger.info(f"단일 게시글 처리 시작: {post_url}")
         
         post_soup = get_page_content(post_url, self.session)
         if not post_soup:
-            logger.error(f"게시글 페이지를 가져오는데 실패했습니다: {post_url}")
+            logging.error(f"게시글 페이지를 가져오는데 실패했습니다: {post_url}")
             return
         
         if is_first:
@@ -130,7 +131,7 @@ class NexonCrawler:
             # 게시글 내용 추출 시도
             content_area = post_soup.select_one('.view_body_wrap .content_area')
             if not content_area:
-                logger.error(f"게시글 내용 영역을 찾을 수 없습니다: {post_url}")
+                logging.error(f"게시글 내용 영역을 찾을 수 없습니다: {post_url}")
                 content = ""
             else:
                 # 일반 게시글 내용 추출
@@ -154,7 +155,7 @@ class NexonCrawler:
                     content = ""
             
         except Exception as e:
-            logger.error(f"게시글 내용 추출 중 오류 발생: {str(e)}")
+            logging.error(f"게시글 내용 추출 중 오류 발생: {str(e)}")
             content = ""
             
         self.posts.append({
@@ -166,5 +167,5 @@ class NexonCrawler:
         })
 
 if __name__ == "__main__":
-    crawler = NexonCrawler()
+    crawler = NoticeCrawler()
     crawler.crawl() 

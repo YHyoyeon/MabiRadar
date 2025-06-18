@@ -4,7 +4,7 @@ import logging
 from pathlib import Path
 
 from config import DISCORD_WEBHOOK_URL, LAST_NOTIFIED_FILE, BASE_URL
-from utils import load_json_file, save_json_file, setup_logging
+from crawler.nexon_crawler.utils.utils import load_json_file, save_json_file, setup_logging
 
 logger = setup_logging()
 

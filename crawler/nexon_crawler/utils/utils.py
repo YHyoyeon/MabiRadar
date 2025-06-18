@@ -67,4 +67,19 @@ def setup_session() -> requests.Session:
         'Connection': 'keep-alive',
         'Cache-Control': 'no-cache'
     })
-    return session 
+    return session
+
+def load_previous_ids(file_url: str) -> Set[str]:
+    logging.info(f"이전 ID 로드 시작: {file_url}")
+    try:
+        items = load_json_file(file_url)
+        ids = {item['id'] for item in items}
+        logging.info(f"이전 ID 로드 완료: {ids}")
+        return ids
+    except FileNotFoundError:
+        logging.info(f"이전 파일이 없습니다. 새로운 파일을 생성합니다: {file_url}")
+        return set()
+
+def save_current_items(file_url: str, items: List[Dict]) -> Set[str]:
+    save_json_file(file_url, items)
+    return {item['id'] for item in items} 

@@ -14,6 +14,7 @@ DEBUG: Final[bool] = os.getenv("DEBUG", "False").lower() == "true"
 # 넥슨 마비노기 모바일 공지사항 URL
 BASE_URL: Final[str] = "https://mabinogimobile.nexon.com"
 NOTICE_URL: Final[str] = f"{BASE_URL}/News/Notice"
+EVENT_URL: Final[str] = f"{BASE_URL}/News/Events"
 
 # 크롤링 설정
 SLEEP_TIME: Final[float] = 1.0
@@ -22,8 +23,10 @@ USER_AGENT: Final[str] = 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_7_1 like Mac OS 
 
 # 파일 경로
 OUTPUT_DIR: Final[Path] = BASE_DIR / "output"
-CONTENTS_FILE: Final[Path] = OUTPUT_DIR / "contents.json"
+CONTENTS_FILE: Final[Path] = OUTPUT_DIR / "notice_contents.json"
 LAST_NOTIFIED_FILE: Final[Path] = OUTPUT_DIR / "last_notified.json"
+EVENT_CONTENTS_FILE: Final[Path] = OUTPUT_DIR / "event_contents.json"
+EVENT_IMAGES_DIR: Final[Path] = OUTPUT_DIR / "event_images"
 
 # 디버그 설정
 DEBUG_DIR: Final[Path] = BASE_DIR / "debug"
