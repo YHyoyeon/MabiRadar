@@ -1,22 +1,25 @@
 import requests
 from bs4 import BeautifulSoup
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Set
 import logging
 import sys
 import os
 from datetime import datetime
 from time import sleep
 from pathlib import Path
+import json
 
 # 상위 디렉토리를 파이썬 경로에 추가
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import (
-    END_DATE, SLEEP_TIME, MAX_RETRIES,
-    OUTPUT_DIR, CONTENTS_FILE, REPLIES_FILE,
-    BASE_URL,NOTICE_URL,  NOTICE_LIST_URL, DEBUG_DIR
+    SLEEP_TIME, MAX_RETRIES,
+    CONTENTS_FILE,
+    BASE_URL, NOTICE_URL, DEBUG_DIR,
+    DISCORD_WEBHOOK_URL
 )
 from save import save_data
+from discord_notifier import DiscordNotifier
 
 # 로깅 설정
 logging.basicConfig(
@@ -33,6 +36,8 @@ class NexonCrawler:
         self._setup_session()
         self.debug_dir = Path(DEBUG_DIR)
         self.debug_dir.mkdir(exist_ok=True)
+        self.discord_notifier = DiscordNotifier(DISCORD_WEBHOOK_URL)
+        self.previous_post_ids: Set[str] = self._load_previous_post_ids()
         
     def _setup_session(self):
         """세션 설정"""
@@ -92,6 +97,28 @@ class NexonCrawler:
         except Exception as e:
             logger.error(f"크롤링 중 오류 발생: {str(e)}")
         
+    def _load_previous_post_ids(self) -> Set[str]:
+        """이전 게시글 ID 목록을 로드"""
+        try:
+            if os.path.exists(CONTENTS_FILE):
+                with open(CONTENTS_FILE, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    return {post['id'] for post in data}
+            return set()
+        except Exception as e:
+            logger.error(f"이전 게시글 ID 로드 중 오류 발생: {str(e)}")
+            return set()
+            
+    def _save_current_post_ids(self):
+        """현재 게시글 ID 목록을 저장"""
+        try:
+            current_ids = {post['id'] for post in self.posts}
+            with open(CONTENTS_FILE, 'w', encoding='utf-8') as f:
+                json.dump(self.posts, f, ensure_ascii=False, indent=2)
+            self.previous_post_ids = current_ids
+        except Exception as e:
+            logger.error(f"현재 게시글 ID 저장 중 오류 발생: {str(e)}")
+
     def _process_articles(self, article_list):
         """게시글 목록을 처리하는 메서드"""
         for article in article_list:
@@ -136,6 +163,20 @@ class NexonCrawler:
         
         # 게시글 저장
         save_data(self.posts)
+        
+        # 새로운 게시글만 디스코드 알림 전송
+        new_posts = [post for post in self.posts if post['id'] not in self.previous_post_ids]
+        if new_posts:
+            logger.info(f"새로운 게시글 {len(new_posts)}개 발견! 디스코드 알림 전송")
+            # TODO: 디스코드 알림 전송 기능 추가
+            for post in new_posts:  
+                logger.info(f"새로운 게시글 디스코드로 전송: {post['id']}")
+                # self.discord_notifier.send_notification(f"{BASE_URL}/News/Notice/{post['id']}")
+        else:
+            logger.info("새로운 게시글이 없습니다.")
+            
+        # 현재 게시글 ID 저장
+        self._save_current_post_ids()
                 
     def _process_single_article(self, post_id: str, title: str, post_url: str, post_date: str, post_type: str, is_first: bool):
         logger.info(f"단일 게시글 처리 시작: {post_url}")

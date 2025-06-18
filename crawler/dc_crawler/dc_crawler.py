@@ -20,7 +20,7 @@ from config import (
     END_DATE, GALLERY_TYPE, TARGET_GALLERY, 
     BASE_URL, SLEEP_TIME, MAX_RETRIES
 )
-from save import save_data
+from crawler.dc_crawler.save import save_data
 
 # 로깅 설정
 logging.basicConfig(
