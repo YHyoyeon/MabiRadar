@@ -5,12 +5,19 @@ from selenium.common.exceptions import WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 from bs4 import BeautifulSoup
 from time import sleep
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import List, Tuple, Optional
 import logging
+import sys
+import os
+
+# 실행: python ./dc_crawler/dc_crawler.py 
+
+# 상위 디렉토리를 파이썬 경로에 추가
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from config import (
-    START_DATE, END_DATE, GALLERY_TYPE, TARGET_GALLERY, 
+    END_DATE, GALLERY_TYPE, TARGET_GALLERY, 
     BASE_URL, SLEEP_TIME, MAX_RETRIES
 )
 from save import save_data
@@ -22,7 +29,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-class MabiCrawler:
+class DcCrawler:
     def __init__(self):
         self.driver = self._setup_driver()
         self.posts: List[Tuple] = []
@@ -61,7 +68,6 @@ class MabiCrawler:
     
     def crawl(self):
         logger.info("크롤링 시작")
-        logger.info(f"현재시간 : {START_DATE}")
         logger.info(f"종료시간 : {END_DATE}")
         
         page = 1
@@ -169,13 +175,9 @@ class MabiCrawler:
             logger.info(f"post_date: {post_date}")
             post_time = datetime.strptime(post_date, "%Y-%m-%d %H:%M:%S")
             
-            if post_time < START_DATE:
-                logger.info(f"START_DATE({START_DATE})보다 이전 게시글 발견, 크롤링 종료")
-                self.driver.quit()
-                save_data(self.posts, self.comments)
-                exit(0)
-            elif post_time > END_DATE:
-                logger.info(f"END_DATE({END_DATE})보다 이후 게시글 발견, 크롤링 종료")
+            # 게시글이 post_time의 DESC 기준으로 정렬되어있기 떄문에 종료시간보다 이전 게시글 발견 시 크롤링 종료
+            if  post_time < END_DATE:
+                logger.info(f"END_DATE({END_DATE})보다 이전 게시글 발견, 크롤링 종료")
                 self.driver.quit()
                 save_data(self.posts, self.comments)
                 exit(0)
@@ -193,21 +195,22 @@ class MabiCrawler:
             
         self.posts.append((gall_id, title, content, post_date))
         
+        # TODO: 댓글 처리 추가
         # self._process_comments(post_soup, gall_id)
         
-    # def _process_comments(self, post_soup: BeautifulSoup, gall_id: str):
-    #     logger.info(f"댓글 처리 시작: {gall_id}")
-    #     reply_blocks = post_soup.select("li.ub-content")
-    #     for r in reply_blocks:
-    #         try:
-    #             rid = r.select_one("em").text.strip()
-    #             rdate = r.select_one("span.date_time").text.strip()
-    #             rtext = r.select_one("p.ub-word").text.strip()
-    #             self.comments.append((gall_id, rid, rtext, rdate))
-    #         except Exception as e:
-    #             logger.error(f"댓글 처리 실패: {str(e)}")
-    #             continue
+        # def _process_comments(self, post_soup: BeautifulSoup, gall_id: str):
+        #     logger.info(f"댓글 처리 시작: {gall_id}")
+        #     reply_blocks = post_soup.select("li.ub-content")
+        #     for r in reply_blocks:
+        #         try:
+        #             rid = r.select_one("em").text.strip()
+        #             rdate = r.select_one("span.date_time").text.strip()
+        #             rtext = r.select_one("p.ub-word").text.strip()
+        #             self.comments.append((gall_id, rid, rtext, rdate))
+        #         except Exception as e:
+        #             logger.error(f"댓글 처리 실패: {str(e)}")
+        #             continue
 
 if __name__ == "__main__":
-    crawler = MabiCrawler()
+    crawler = DcCrawler()
     crawler.crawl()
