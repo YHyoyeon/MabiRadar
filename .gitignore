@@ -136,5 +136,5 @@ log
 
 *Zone.Identifier
 
-*/debug/*
-*/output/*
+*/*/debug/
+*/*/output/
