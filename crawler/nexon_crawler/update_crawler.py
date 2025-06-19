@@ -68,6 +68,12 @@ class UpdateCrawler:
                 logging.error("업데이트 목록 영역을 찾을 수 없습니다")
                 return
 
+            # 업데이트 목록이 비어있는지 확인
+            list_empty = list_area.select_one('.list_empty')
+            if list_empty:
+                logging.info("현재 업데이트 목록이 비어있습니다. 게시글이 없습니다.")
+                return
+
             # 업데이트 목록 추출
             update_list = list_area.select('li.item[data-mm-listitem]')
             if not update_list:
@@ -149,7 +155,7 @@ class UpdateCrawler:
             for update in new_updates:
                 update_url = f"{UPDATE_URL}/{update['id']}"
                 image_path = UPDATE_IMAGES_DIR / f"{update['id']}.png"
-                self.discord_notifier.send_notification(update, update_url, "업데이트", image_path)
+                self.discord_notifier.send_notification(update, update_url, "업데이트", image_path, update_date)
             
             # 최신 ID 저장
             if new_updates:

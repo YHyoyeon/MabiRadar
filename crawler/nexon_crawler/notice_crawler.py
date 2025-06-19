@@ -67,6 +67,12 @@ class NoticeCrawler:
                 logging.error("공지사항 목록 영역을 찾을 수 없습니다")
                 return
 
+            # 공지사항 목록이 비어있는지 확인
+            list_empty = list_area.select_one('.list_empty')
+            if list_empty:
+                logging.info("현재 공지사항 목록이 비어있습니다. 게시글이 없습니다.")
+                return
+
             # 공지사항 목록 추출
             notice_list = list_area.select('li.item[data-mm-listitem]')
             if not notice_list:
@@ -148,7 +154,7 @@ class NoticeCrawler:
             for notice in new_notices:
                 notice_url = f"{NOTICE_URL}/{notice['id']}"
                 image_path = NOTICE_IMAGES_DIR / f"{notice['id']}.png"
-                self.discord_notifier.send_notification(notice, notice_url, "공지사항", image_path)
+                self.discord_notifier.send_notification(notice, notice_url, "공지사항", image_path, notice_date)
             
             # 최신 ID 저장
             if new_notices:

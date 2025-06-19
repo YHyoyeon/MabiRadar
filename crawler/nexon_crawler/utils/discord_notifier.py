@@ -11,7 +11,7 @@ class DiscordNotifier:
     def __init__(self, webhook_url: str = DISCORD_WEBHOOK_URL):
         self.webhook_url = webhook_url
         
-    def send_notification(self, post: Dict, post_url: str, type: str = None, image_path: str = None):        
+    def send_notification(self, post: Dict, post_url: str, type: str = None, image_path: str = None, start_date: str = None, end_date: str = None):        
         webhook = DiscordWebhook(url=self.webhook_url)
 
         max_description_length = 50
@@ -27,6 +27,10 @@ class DiscordNotifier:
         
         # 게시글 URL 추가
         embed.add_embed_field(name="공지사항 링크", value=f"[게시글 보기]({post_url})")
+        if start_date:
+            embed.add_embed_field(name="시작일", value=f"**{start_date}**")
+        if end_date:
+            embed.add_embed_field(name="종료일", value=f"**{end_date}**")
         
         # 이미지가 있는 경우에만 이미지 추가
         if image_path_str:

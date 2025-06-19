@@ -69,6 +69,12 @@ class EventCrawler:
                 logging.error("이벤트 목록 영역을 찾을 수 없습니다")
                 return
 
+            # 이벤트 목록이 비어있는지 확인
+            list_empty = list_area.select_one('.list_empty')
+            if list_empty:
+                logging.info("현재 이벤트 목록이 비어있습니다. 게시글이 없습니다.")
+                return
+
             # 이벤트 목록 추출
             event_list = list_area.select('li.item[data-mm-listitem]')
             if not event_list:

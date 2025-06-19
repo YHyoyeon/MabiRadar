@@ -42,3 +42,5 @@ requests + BeautifulSoup
 data-threadid만 감지 → 저장된 ID와 비교
 변화 감지 시 notice_crawler.py 같은 전체 크롤러 트리거 실행
 (스크린샷, 디스코드 알림 등은 이때만 실행)
+
+TODO: 이미 지나간 이벤트나 공지는 알리지 않도록 date 표시
